@@ -5,13 +5,13 @@
 #include <WiFiUdp.h>
 
 // --- KONFIGURASI WIFI ---
-const char* ssid = "WIFI";
+const char* ssid = "YOUR-WIFI";
 const char* password = "xxxx";
 
 // --- URL API SERVER ---
 // --- sesuaikan dengan server ----
-const char* serverCheckUrl = "https://xxxxx/bell/check_bell.php"; 
-const char* serverLogUrl   = "https://xxxx/bell/log_bell.php";
+const char* serverCheckUrl = "https://your-domain.combell/check_bell.php"; 
+const char* serverLogUrl   = "https://your-domain.com/bell/log_bell.php";
 
 // --- KONFIGURASI PIN ---
 const int RELAY_PIN  = 16;  // Pin relay terintegrasi pada board ESP32
