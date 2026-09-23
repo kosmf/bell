@@ -1,35 +1,11 @@
 <?php
-$Scriptis = 'BellControl.php';
-include('includes/session.php');
-$Title = "Kontrol & Jadwal Bel Pabrik";
-include('includes/header.php');
-
-date_default_timezone_set('Asia/Jakarta');
-
-// --- HANDLE AKSI AJAX / POST ---
+// --- HANDLE AKSI AJAX DI BARIS PALING ATAS (MURNI JSON) ---
 if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
+    include('includes/session.php');
+    date_default_timezone_set('Asia/Jakarta');
     
-    // 1. Trigger Manual Bel
-    if ($_GET['action'] == 'trigger') {
-        $mac =$_GET['mac'] ?? '';
-        $duration = intval($_GET['duration'] ?? 1);
-        $type =$_GET['type'] ?? 'kontinu';
-        if ($duration < 1)$duration = 1;
-
-        if ($mac) {
-            try {
-                $sql = "INSERT INTO bell_queue (mac_address, duration, bell_type) VALUES ('" . $mac . "', " . $duration . ", '" . $type . "')";
-                DB_query($sql);
-                echo json_encode(["status" => "success", "message" => "Perintah manual berhasil dimasukkan ke antrean!"]);
-            } catch (Exception $e) {
-                echo json_encode(["status" => "error", "message" => $e->getMessage()]);
-            }
-        } else {
-            echo json_encode(["status" => "error", "message" => "MAC Address perangkat belum dipilih atau tidak valid."]);
-        }
-        exit;
-    }
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
     
     // 2. Tambah / Update Jadwal
     if ($_GET['action'] == 'save_schedule') {
@@ -50,45 +26,22 @@ if (isset($_GET['action'])) {
             } catch (Exception $e) {
                 echo json_encode(["status" => "error", "message" => $e->getMessage()]);
             }
-        }
-        exit;
-    }
-
-    // 3. Hapus Jadwal
-    if ($_GET['action'] == 'del_schedule') {
-        $id = intval($_GET['id'] ?? 0);
-        try {
-            DB_query("DELETE FROM schedules WHERE id = " . $id);
-            echo json_encode(["status" => "success"]);
-        } catch (Exception $e) {
-            echo json_encode(["status" => "error", "message" => $e->getMessage()]);
-        }
-        exit;
-    }
-
-    // 4. Simpan Pengaturan Hari Libur Mingguan
-    if ($_GET['action'] == 'save_settings') {$off_days = isset($_GET['off_days']) ?$_GET['off_days'] : '0'; // Contoh: "0,6" untuk Minggu dan Sabtu
-        try {
-            // Cek apakah setting sudah ada
-            $chk = DB_query("SELECT setting_value FROM bell_settings WHERE setting_key = 'weekend_days'");
-            if (DB_num_rows($chk) > 0) {
-                DB_query("UPDATE bell_settings SET setting_value = '" . $off_days . "' WHERE setting_key = 'weekend_days'");
-            } else {
-                DB_query("INSERT INTO bell_settings (setting_key, setting_value) VALUES ('weekend_days', '" . $off_days . "')");
-            }
-            echo json_encode(["status" => "success"]);
-        } catch (Exception $e) {
-            // Jika tabel bell_settings belum ada, buat otomatis
-            DB_query("CREATE TABLE IF NOT EXISTS bell_settings (setting_key VARCHAR(50) PRIMARY KEY, setting_value VARCHAR(255))");
-            DB_query("INSERT INTO bell_settings (setting_key, setting_value) VALUES ('weekend_days', '" . $off_days . "') ON DUPLICATE KEY UPDATE setting_value='" . $off_days . "'");
-            echo json_encode(["status" => "success"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Jam tidak boleh kosong."]);
         }
         exit;
     }
 }
 
-// --- AMBIL DATA ---
-$devices = []; $schedules = [];$logs = []; $queues = [];$weekend_days = ['0']; // Default Minggu (0) libur
+// --- HALAMAN UTAMA HTML ---
+$Scriptis = 'BellControl.php';
+include('includes/session.php');
+$Title = "Kontrol & Jadwal Bel Pabrik";
+include('includes/header.php');
+
+date_default_timezone_set('Asia/Jakarta');
+
+$devices = []; $schedules = [];$logs = []; $queues = [];$weekend_days = ['0'];
 
 try {
     $setResult = DB_query("SELECT setting_value FROM bell_settings WHERE setting_key = 'weekend_days'");
@@ -341,14 +294,20 @@ function saveSchedule() {
         return;
     }
 
-    fetch(`BellControl.php?action=save_schedule&id=${id}&jam=${jam}&keterangan=${encodeURIComponent(ket)}&duration=${dur}&bell_type=${type}`)
+    let url = `BellControl.php?action=save_schedule&id=${id}&jam=${jam}&keterangan=${encodeURIComponent(ket)}&duration=${dur}&bell_type=${type}`;
+
+    fetch(url)
         .then(res => res.json())
         .then(data => {
             if(data.status === "success") {
                 location.reload();
             } else {
-                alert("Gagal menyimpan jadwal.");
+                alert("Gagal menyimpan jadwal: " + (data.message || "Terjadi kesalahan pada server."));
             }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            alert("Terjadi kesalahan koneksi ke server.");
         });
 }
 
