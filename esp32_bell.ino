@@ -33,7 +33,6 @@ const unsigned long checkInterval = 60000; // Cek ke server setiap 1 menit sekal
 String lastRingTime = ""; 
 
 // Fungsi untuk mengeksekusi jenis suara bel
-// Fungsi untuk mengeksekusi jenis suara bel
 void executeBell(int durationSeconds, String bellType) {
   Serial.print(">>> MENYALAKAN BEL (Tipe: ");
   Serial.print(bellType);
